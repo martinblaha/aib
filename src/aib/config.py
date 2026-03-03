@@ -1,6 +1,5 @@
 """Configuration management for aib."""
 
-import sys
 import tomllib
 from pathlib import Path
 from typing import Any
@@ -10,7 +9,6 @@ CONFIG_FILE = CONFIG_DIR / "config.toml"
 
 DEFAULTS: dict[str, Any] = {
     "backend": "claude",
-    "language": "en",
     "max_results": 5,
     "timeout": 30,
 }
@@ -33,7 +31,8 @@ def save(config: dict[str, Any]) -> None:
     lines = []
     for key, value in config.items():
         if isinstance(value, str):
-            lines.append(f'{key} = "{value}"')
+            escaped = value.replace("\\", "\\\\").replace('"', '\\"')
+            lines.append(f'{key} = "{escaped}"')
         elif isinstance(value, bool):
             lines.append(f"{key} = {'true' if value else 'false'}")
         else:
