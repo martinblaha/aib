@@ -19,11 +19,11 @@ No copy-paste required — the selected command lands directly in your readline 
 ### Install
 
 ```bash
-# With uv tool
-uv tool install aib
+# With uv tool (recommended)
+uv tool install git+https://github.com/martinblaha/aib.git
 
 # Or with pipx
-pipx install aib
+pipx install git+https://github.com/martinblaha/aib.git
 ```
 
 ### Shell Integration
