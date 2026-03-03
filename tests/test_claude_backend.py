@@ -1,7 +1,17 @@
-"""Unit tests for backend response parsing."""
+"""Unit tests for backend response parsing and error handling."""
+
+import subprocess
+from unittest.mock import patch, MagicMock
 
 import pytest
-from aib.backend.base import BackendResult, BaseBackend
+from aib.backend.base import (
+    BackendError,
+    BackendNotFoundError,
+    BackendResult,
+    BackendTimeoutError,
+    BaseBackend,
+)
+from aib.backend.claude import ClaudeBackend
 
 
 # Concrete subclass for testing parse()
@@ -12,6 +22,8 @@ class _TestBackend(BaseBackend):
 
 BACKEND = _TestBackend()
 
+
+# --- parse() tests ---
 
 def test_parse_valid_response():
     raw = """\
@@ -98,3 +110,40 @@ def test_backend_result_invalid_no_commands():
 def test_backend_result_invalid_no_explanation():
     r = BackendResult(explanation="", commands=["echo hi"])
     assert not r.is_valid()
+
+
+# --- ClaudeBackend error handling tests ---
+
+def test_claude_backend_not_found():
+    backend = ClaudeBackend()
+    with patch("subprocess.run", side_effect=FileNotFoundError):
+        with pytest.raises(BackendNotFoundError, match="claude.*not found"):
+            backend.query("test")
+
+
+def test_claude_backend_timeout():
+    backend = ClaudeBackend(timeout=5)
+    with patch("subprocess.run", side_effect=subprocess.TimeoutExpired(cmd="claude", timeout=5)):
+        with pytest.raises(BackendTimeoutError, match="timed out"):
+            backend.query("test")
+
+
+def test_claude_backend_nonzero_exit():
+    mock_result = MagicMock()
+    mock_result.returncode = 1
+    mock_result.stderr = "some error"
+    with patch("subprocess.run", return_value=mock_result):
+        backend = ClaudeBackend()
+        with pytest.raises(BackendError, match="some error"):
+            backend.query("test")
+
+
+def test_claude_backend_success():
+    mock_result = MagicMock()
+    mock_result.returncode = 0
+    mock_result.stdout = "EXPLANATION: Test.\nCOMMANDS:\necho hello\n"
+    with patch("subprocess.run", return_value=mock_result):
+        backend = ClaudeBackend()
+        result = backend.query("test")
+        assert result.explanation == "Test."
+        assert result.commands == ["echo hello"]
