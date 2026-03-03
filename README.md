@@ -2,17 +2,7 @@
 
 AI-powered shell command helper. Describe what you want to do in plain language, pick a command from the interactive menu, and it appears ready-to-run in your terminal.
 
-```
-$ list large files[Alt+a]
-
-  Lists files sorted by size in descending order.
-
-  > du -sh * | sort -rh
-    find . -type f -printf '%s %p\n' | sort -rn | head -20
-    ls -lhS
-
-$ du -sh * | sort -rh    ← cursor here, press Enter to run
-```
+![aib demo](aib.gif)
 
 No copy-paste required — the selected command lands directly in your readline buffer.
 
