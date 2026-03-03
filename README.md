@@ -3,18 +3,18 @@
 AI-powered shell command helper. Describe what you want to do in plain language, pick a command from the interactive menu, and it appears ready-to-run in your terminal.
 
 ```
-$ aib "find all PDFs modified in the last 7 days"
+$ list large files[Alt+a]
 
-  Lists PDF files in subdirectories filtered by modification date
+  Lists files sorted by size in descending order.
 
-  > find . -name "*.pdf" -mtime -7
-    find . -name "*.pdf" -newer $(date -d "7 days ago" +%Y-%m-%d)
-    fd --extension pdf --changed-within 7d
+  > du -sh * | sort -rh
+    find . -type f -printf '%s %p\n' | sort -rn | head -20
+    ls -lhS
 
-[Enter to run]
+$ du -sh * | sort -rh    ← cursor here, press Enter to run
 ```
 
-The selected command is injected directly into your shell's readline buffer — no copy-paste required.
+No copy-paste required — the selected command lands directly in your readline buffer.
 
 ---
 
@@ -29,16 +29,14 @@ The selected command is injected directly into your shell's readline buffer — 
 ### Install
 
 ```bash
-# With pipx (recommended)
-pipx install aib
-
-# Or with uv
+# With uv tool
 uv tool install aib
+
+# Or with pipx
+pipx install aib
 ```
 
 ### Shell Integration
-
-Add the `aib` shell function to your shell config:
 
 ```bash
 # bash
@@ -51,21 +49,36 @@ _aib init --shell zsh >> ~/.zshrc && source ~/.zshrc
 _aib init --shell fish >> ~/.config/fish/config.fish
 ```
 
-Now use `aib` (not `_aib`) to get readline injection.
-
 ---
 
 ## Usage
 
+### Keybinding — Alt+A (bash, recommended)
+
+Type your query at the prompt, then press **Alt+A**:
+
+```
+$ find all PDFs modified this week[Alt+a]
+  → picker appears, select command, it replaces the current line
+$ find . -name "*.pdf" -mtime -7    ← ready to edit or run
+```
+
+### Direct invocation
+
 ```bash
-aib "list files by size, largest first"
 aib "kill process on port 8080"
 aib "find and delete node_modules directories"
 aib "show disk usage of each subdirectory"
 aib "compress a directory to tar.gz"
 ```
 
-### Direct output (no readline injection)
+The selected command is shown pre-filled for editing; press Enter to run.
+
+### Zsh
+
+`print -z` injects directly into the ZSH line editor — both `aib "query"` and keybinding work identically.
+
+### Raw output (no shell integration)
 
 ```bash
 _aib "your query"
@@ -75,11 +88,19 @@ _aib "your query"
 
 ## How It Works
 
-1. `aib "query"` calls `_aib "query"` and captures its stdout
-2. `_aib` sends the query to `claude -p` and parses the response
-3. An interactive picker displays the suggested commands
-4. The selected command is printed to stdout
-5. The `aib` shell function injects it into `READLINE_LINE` (bash) or `print -z` (zsh)
+```
+aib "query"  ──▶  _aib subprocess  ──▶  claude -p  ──▶  parse response
+                       │
+                  questionary picker (on /dev/tty)
+                       │
+                  selected command ──▶ stdout
+                       │
+             bash: read -e -i (editable prompt)
+             zsh:  print -z   (readline buffer injection)
+```
+
+**Why two mechanisms for bash?**
+`READLINE_LINE` (true readline injection) only works when a function is invoked via `bind -x` — not on direct calls. The `__aib_widget__` keybinding uses `bind -x` for true injection; `aib "query"` falls back to `read -e -i` which shows the command editable before running.
 
 No API key required — uses your existing `claude` CLI session.
 

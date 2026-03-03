@@ -8,7 +8,7 @@
 | FR-002 | Call an AI backend to generate shell command suggestions | ✅ v0.1 |
 | FR-003 | Display 3–5 command suggestions in an interactive picker | ✅ v0.1 |
 | FR-004 | Print the selected command to stdout | ✅ v0.1 |
-| FR-005 | Inject selected command into shell readline buffer | ✅ v0.1 (via shell function) |
+| FR-005 | Inject selected command into shell readline buffer | ✅ v0.1 |
 | FR-006 | Support bash, zsh, and fish shell integration | ✅ v0.1 |
 | FR-007 | Provide `_aib init` to generate shell integration code | ✅ v0.1 |
 | FR-008 | Read/write config from `~/.config/aib/config.toml` | ✅ v0.1 |
@@ -76,18 +76,53 @@ COMMANDS:
 ## Shell Integration Specification
 
 ### Bash
+
+Bash requires two separate mechanisms because `READLINE_LINE` only works inside
+functions invoked via `bind -x`, not in regular function calls.
+
+**Keybinding widget** (true readline injection, Alt+A):
+```bash
+__aib_widget__() {
+  local query="$READLINE_LINE"
+  READLINE_LINE=""
+  READLINE_POINT=0
+  if [[ -n "$query" ]]; then
+    local cmd
+    cmd=$(_aib "$query") || {
+      READLINE_LINE="$query"
+      READLINE_POINT=${#query}
+      return
+    }
+    if [[ -n "$cmd" ]]; then
+      READLINE_LINE="$cmd"
+      READLINE_POINT=${#cmd}
+    else
+      READLINE_LINE="$query"
+      READLINE_POINT=${#query}
+    fi
+  fi
+}
+bind -x '"\ea": __aib_widget__'
+```
+
+**Direct invocation fallback** (`aib "query"`):
 ```bash
 aib() {
-  local cmd
+  local cmd result
   cmd=$(_aib "$@") || return $?
   if [[ -n "$cmd" ]]; then
-    READLINE_LINE="$cmd"
-    READLINE_POINT=${#cmd}
+    read -e -i "$cmd" result || return 0
+    if [[ -n "$result" ]]; then
+      history -s "$result"
+      eval "$result"
+    fi
   fi
 }
 ```
 
 ### Zsh
+
+`print -z` pushes to the ZSH input stack — works for both direct calls and keybindings:
 ```zsh
 aib() {
   local cmd
@@ -97,6 +132,7 @@ aib() {
 ```
 
 ### Fish
+
 ```fish
 function aib
   set cmd (_aib $argv) || return $status
