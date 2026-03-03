@@ -1,9 +1,14 @@
 """Claude CLI backend for aib."""
 
 import subprocess
-import sys
 
-from aib.backend.base import BackendResult, BaseBackend
+from aib.backend.base import (
+    BackendError,
+    BackendNotFoundError,
+    BackendResult,
+    BackendTimeoutError,
+    BaseBackend,
+)
 from aib.prompt import QUERY_TEMPLATE
 
 
@@ -23,17 +28,15 @@ class ClaudeBackend(BaseBackend):
                 timeout=self.timeout,
             )
         except FileNotFoundError:
-            print(
-                "Error: 'claude' CLI not found. Install it with: npm install -g @anthropic-ai/claude-code",
-                file=sys.stderr,
+            raise BackendNotFoundError(
+                "'claude' CLI not found. Install it with: npm install -g @anthropic-ai/claude-code"
             )
-            sys.exit(1)
         except subprocess.TimeoutExpired:
-            print(f"Error: Claude timed out after {self.timeout}s.", file=sys.stderr)
-            sys.exit(1)
+            raise BackendTimeoutError(
+                f"Claude timed out after {self.timeout}s."
+            )
 
         if result.returncode != 0:
-            print(f"Error from claude: {result.stderr.strip()}", file=sys.stderr)
-            sys.exit(1)
+            raise BackendError(f"claude exited with error: {result.stderr.strip()}")
 
         return self.parse(result.stdout)

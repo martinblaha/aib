@@ -1,7 +1,19 @@
 """Abstract base class for aib backends."""
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+
+
+class BackendError(Exception):
+    """Base exception for backend errors."""
+
+
+class BackendNotFoundError(BackendError):
+    """The backend CLI tool is not installed."""
+
+
+class BackendTimeoutError(BackendError):
+    """The backend timed out."""
 
 
 @dataclass

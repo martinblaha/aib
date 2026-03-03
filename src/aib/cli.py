@@ -2,12 +2,12 @@
 
 import os
 import sys
-from typing import Any
 
 import click
 from rich.console import Console
 
 from aib import __version__
+from aib.backend.base import BackendError
 from aib.backend.claude import ClaudeBackend
 from aib import config as cfg
 from aib.picker import pick_command
@@ -87,7 +87,11 @@ def run_query(user_input: str) -> None:
 
     err_console.print(f"  [dim]Asking Claude about:[/dim] [bold]{user_input}[/bold]")
 
-    result = backend.query(user_input)
+    try:
+        result = backend.query(user_input)
+    except BackendError as e:
+        err_console.print(f"[red]Error:[/red] {e}")
+        sys.exit(1)
 
     if not result.is_valid():
         err_console.print("[red]Error:[/red] Could not parse response from Claude.")
