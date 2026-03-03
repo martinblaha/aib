@@ -1,7 +1,7 @@
 """Shell integration script generator for aib."""
 
 BASH_INTEGRATION = '''\
-# aib — AI in Bash shell integration
+# aib shell integration
 # Add to ~/.bashrc or ~/.bash_profile
 
 # True readline injection via keybinding (recommended):
@@ -48,7 +48,7 @@ aib() {
 '''
 
 ZSH_INTEGRATION = '''\
-# aib — AI in Bash shell integration
+# aib shell integration
 # Add to ~/.zshrc
 aib() {
   local cmd
@@ -58,10 +58,11 @@ aib() {
 '''
 
 FISH_INTEGRATION = '''\
-# aib — AI in Bash shell integration
+# aib shell integration
 # Add to ~/.config/fish/config.fish
 function aib
-  set cmd (_aib $argv) || return $status
+  set cmd (_aib $argv)
+  or return $status
   if test -n "$cmd"
     commandline "$cmd"
   end
