@@ -20,10 +20,13 @@ No copy-paste required — the selected command lands directly in your readline 
 
 ```bash
 # With uv tool (recommended)
-uv tool install git+https://github.com/martinblaha/aib.git
+uv tool install aib
 
 # Or with pipx
-pipx install git+https://github.com/martinblaha/aib.git
+pipx install aib
+
+# Or directly from GitHub (pre-release / development)
+uv tool install git+https://github.com/martinblaha/aib.git
 ```
 
 ### Shell Integration
